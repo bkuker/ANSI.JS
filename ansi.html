@@ -1,0 +1,325 @@
+<html>
+	<head>
+		<META http-equiv="Content-Type" content="text/html; charset=ibm850">
+	</head>
+	<body>
+		<pre>
+			<div id='ansi'/>
+		</pre>
+	<button onclick='load("ROOTS01.ANS")'>Roots</button>
+	<button onclick='load("RET-RAIN.ANS")'>Rain</button>
+	<button onclick='load("test.ans")'>Girl</button>
+	<button onclick='load("bart.ans")'>Bart</button>
+	<button onclick='load("CX-CPOIS.ANS")'>Dragon</button>
+	<button onclick='load("color.ans")'>Color</button>
+		<script language='javascript'>
+			var display;
+			var rows;
+			var cursor_x = 0;
+			var cursor_y = 0;
+			var cols = 0;
+			var tbody;
+
+			function load(url){
+var xmlhttp=false;
+/*@cc_on @*/
+/*@if (@_jscript_version >= 5)
+// JScript gives us Conditional compilation, we can cope with old IE versions.
+// and security blocked creation of the objects.
+ try {
+  xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+ } catch (e) {
+  try {
+   xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+  } catch (E) {
+   xmlhttp = false;
+  }
+ }
+@end @*/
+if (!xmlhttp && typeof XMLHttpRequest!='undefined') {
+	try {
+		xmlhttp = new XMLHttpRequest();
+	} catch (e) {
+		xmlhttp=false;
+	}
+}
+if (!xmlhttp && window.createRequest) {
+	try {
+		xmlhttp = window.createRequest();
+	} catch (e) {
+		xmlhttp=false;
+	}
+}
+xmlhttp.overrideMimeType("text/plain; charset=ibm850");  		
+ xmlhttp.open("GET", url,true);
+ xmlhttp.onreadystatechange=function() {
+  if (xmlhttp.readyState==4) {
+   writeAnsi(xmlhttp.responseText)
+  }
+ }
+;
+ xmlhttp.send(null)
+
+			}
+
+			function init(xS, yS) {
+				rows = yS;
+				cols = xS;
+				display = new Array(xS);
+				for ( var i=0; i < display.length; i++ )
+					display[i] = new Array(yS);
+
+				var mybody=document.getElementById("ansi");
+				mytable = document.createElement("TABLE");
+				mytable.setAttribute('cellspacing', '10');
+				mytable.setAttribute('border', '0');
+				mytable.setAttribute('cellpadding', '0');
+				mytable.setAttribute('style', 'font-family: monospace;');
+				mytable.cellSpacing = 0;
+				mytable.cellPadding = 0;
+				mytable.style.fontFamily = 'monospace';
+				mytable.style.layout = 'fixed';
+				//mytable.style.border.width = '0px';
+				//mytable.style.border.style = 'none';
+				//mytable.style.border.spacing = '0px';
+				//mytable.style.border.collapse = 'collapse';
+				//mytable.style.border.color = '#f00';
+				//mytable.style.padding = '0px';
+				tbody = document.createElement("TBODY");
+				for(y=0; y<yS; y++) {
+					mycurrent_row=document.createElement("TR");
+					for(x=0; x<xS; x++) {
+						mycurrent_cell=document.createElement("TD");
+						display[y][x] = mycurrent_cell;
+						mycurrent_cell.innerHTML = '&nbsp;';
+						mycurrent_row.appendChild(mycurrent_cell);
+						mycurrent_cell.setAttribute('style', 'font-family: monospace;');
+						mycurrent_cell.style.fontFamily = 'monospace';
+						mycurrent_cell.style.color = normal[fg];
+						mycurrent_cell.style.background = back[bg];
+					}
+					tbody.appendChild(mycurrent_row);
+				}
+				mytable.appendChild(tbody);
+				mybody.appendChild(mytable);
+				return screen;
+			}
+
+			function scroll( ){
+				row = tbody.childNodes[0];
+				tbody.removeChild(row);
+				tbody.appendChild(row);
+				lr = display[0];
+				for( r = 0; r < rows-1; r++ ){
+					display[r] = display[r+1];
+				}
+				display[rows-1] = lr;
+				clear(rows-1,0);
+			}
+
+			function clear( line, start ){
+				for( x = start; x < cols; x++ ){
+					td = display[line][x];
+					td.innerHTML = '&nbsp;';
+					td.style.color = '#fff';
+					td.style.background ='#000';
+				}
+			}
+
+			var code = 0;
+			var nums = new Array(10);
+			var numPart = '';
+			var numCount = 0;
+			var save_x = 0;
+			var save_y = 0;
+			var bold = false;
+			var data;
+			var pos;
+			var cnt = 0;
+
+			function writeAnsi( s ){
+				data = s.split('');
+				pos = 0;
+				writeSome(100);
+			}
+
+			function writeSome(chars){
+				for ( p	 = 0; p < chars && pos < data.length; p++, pos++ ){
+					cnt++;
+					ch = data[pos];
+					if ( code == 0 ){
+						if ( ch == '' ){
+							code = 1;
+						} else if ( ch == '\r' ){
+						
+						} else {
+							if ( ch == ' ' )
+								ch = '&nbsp;';	
+							else if ( ch.charCodeAt(0) == 204 )
+								ch = '&#9616;';
+							else if ( ch.charCodeAt(0) == 166 )
+								ch = '&#9612;';	
+							td = display[cursor_y][cursor_x];
+							if ( ch != '\n' ){
+								td.innerHTML = ch;
+							//td.innerHTML += cnt;
+							//td.innerHTML = fg + ',' + bg;
+							if ( bold )
+								td.style.color = bright[fg];
+							else
+								td.style.color = normal[fg];
+							td.style.background = back[bg];
+							cursor_x++;
+							}
+	
+							if ( cursor_x == cols || ch == '\n' ){
+								cursor_x = 0;
+								cursor_y++;
+								if ( cursor_y == rows ){
+									scroll();
+									cursor_y--;
+								}
+							}
+						}
+					} else if ( code == 1 ){
+						if ( ch == '[' )
+							code = 2;
+						else
+							code = 0;
+					} else if ( code == 2 ){
+						if ( ch >= 0 && ch <= 9 ){
+							numPart = numPart + ch;
+						} else {
+							if ( numPart == '' )
+								numPart = 1;
+							nums[numCount] = parseInt(numPart);
+							numCount++;
+							numPart = '';
+						}
+						switch ( ch ){
+							case 'A': //Up
+								cursor_y -= nums[numCount-1];
+								code = 0;
+								break;
+							case 'B': //down
+								cursor_y += nums[numCount-1];
+								code = 0;
+								break;
+							case 'C': //forward
+								cursor_x += nums[numCount-1];
+								code = 0;
+								break;
+							case 'D': //back
+								cursor_x -= nums[numCount-1];
+								code = 0;
+								break;
+							case 'H': //Move to (TODO: Default to 1)
+							case 'f':
+								cursor_x = nums[1]-1;
+								cursor_y = nums[0]-1;
+								code = 0;
+								break;
+							case 's': //save pos
+								save_x = cursor_x;
+								save_y = cursor_y;
+								code = 0;
+								break;
+							case 'u': //restore pos
+								cursor_x = save_x;
+								cursor_y = save_y;
+								code = 0;
+								break;
+							case 'K': //Erase from cursor to 0orMissing?end of line 1?beginning 2?entire //TODO
+								clear( cursor_y, cursor_x );
+								code = 0;
+								break;
+							case 'J':  //Clear to 0orMissing?end of screen 1?beginning 2?all //TODO
+								if ( nums[0] == 2 ){
+									for ( y = 0; y < rows; y++ )
+										clear(y,0);
+								}
+								cursor_x = cursor_y = 0;
+								code = 0;
+								break;		
+							case 'm':
+								for ( var i = 0; i < numCount; i++ ){
+									if ( nums[i] == 1 )
+										bold = true;
+									if ( nums[i] == 0 ){
+										bold = false;
+										bg = 0;
+										fg = 7;
+									}
+								}
+								for ( var i = 0; i < numCount; i++ ){
+									if ( nums[i] >= 30 && nums[i] <= 37 ){
+										fg = nums[i]-30;
+									} else if ( nums[i] >= 40 && nums[i] <= 47 ){ 
+										bg = nums[i]-40;
+									}
+								}
+								code = 0;
+								break;
+						}
+						if ( code == 0 ){
+							numPart = '';
+							numCount = 0;
+							//nums = new Array(10);
+						}	
+							
+					}
+					if ( cursor_x < 0 )
+						cursor_x = 0;
+					if ( cursor_x >= cols )
+						cursor_x = cols-1;
+					if ( cursor_y < 0 )
+						cursor_y = 0;
+					if ( cursor_y >= rows )
+						cursor_y = rows-1;
+				}
+				setTimeout('writeSome(100)', 100);
+			}
+	
+
+			var fg = 7;
+			var bg = 0;
+ 
+			var back = new Array();
+			back[0] = '#000000';
+			back[1] = '#8f0000';
+			back[2] = '#009000';
+			back[3] = '#7f7f00';
+			back[4] = '#000090';
+			back[5] = '#7f007f';
+			back[6] = '#009f9f';
+			back[7] = '#909090';
+
+			var normal = new Array();
+			normal[0] = '#000';
+			normal[1] = '#8f0000';
+			normal[2] = '#009000';
+			normal[3] = '#7f7f00';
+			normal[4] = '#000090';
+			normal[5] = '#7f007f';
+			normal[6] = '#009f9f';
+			normal[7] = '#b0b0b0';
+
+			var bright = new Array();
+			bright[0] = '#404040';
+			bright[1] = '#ef0000';
+			bright[2] = '#00ef00';
+			bright[3] = '#ffff00';
+			bright[4] = '#0000f0';
+			bright[5] = '#ff00ff';
+			bright[6] = '#00efef';
+			bright[7] = '#ffffff';
+
+
+			
+			init(80,25);
+	
+		
+
+		</script>
+	</body>
+</html>
